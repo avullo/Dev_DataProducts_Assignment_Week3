@@ -1,0 +1,104 @@
+---
+title: "Recent Earthquakes Around Italy"
+author: "Alessandro Vullo"
+date: "20 October 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Overview
+
+- Aim: create and display an interactive map of recent earthquakes around Italy and the surrounding seas
+- Data taken from the [Italian National Institute of Geophysics and Volcanology](http://www.ingv.it/en/)
+
+## Data Processing
+
+- Data available at the [INGV page](http://info.terremoti.ingv.it/) is taken using the [INGV webservices](http://webservices.ingv.it) and downloaded as a text file to a local file.
+
+```{r, eval=FALSE, echo = TRUE}
+if(!file.exists('earthquakes.txt')) {
+  download.file('http://webservices.ingv.it/fdsnws/event/1/query?starttime=2017-10-09T00%3A00%3A00&endtime=2017-10-16T23%3A59%3A59&minmag=2&maxmag=10&mindepth=-10&maxdepth=1000&minlat=-90&maxlat=90&minlon=-180&maxlon=180&minversion=100&orderby=time-asc&format=text&limit=10000', destfile = 'earthquakes.txt', method = "curl")
+}
+```
+
+```{r getdata}
+if(!file.exists('earthquakes.txt')) {
+  download.file('http://webservices.ingv.it/fdsnws/event/1/query?starttime=2017-10-09T00%3A00%3A00&endtime=2017-10-16T23%3A59%3A59&minmag=2&maxmag=10&mindepth=-10&maxdepth=1000&minlat=-90&maxlat=90&minlon=-180&maxlon=180&minversion=100&orderby=time-asc&format=text&limit=10000', destfile = 'earthquakes.txt', method = "curl")
+}
+```
+
+- The downloaded file is a simple text with header and columns delimited by '|'.
+
+```{r, eval=FALSE,echo=TRUE}
+df <- read.csv('earthquakes.txt', header=TRUE, sep="|")
+```
+
+```{r loaddata}
+df <- read.csv('earthquakes.txt', header=TRUE, sep="|")
+```
+
+## Data Processing (2)
+
+```{r, eval = FALSE, echo = TRUE}
+str(df)
+```
+
+```{r}
+str(df)
+```
+
+## Filtering Data
+
+- Dataset contains data for places outside Italy and the surrounding sea
+
+```{r, eval = FALSE, echo = TRUE}
+subset(df, !(Longitude>=6.0 & Longitude<=18.5 & 
+            Latitude>=35.0 & Latitude<=48.0), 
+            select=c('Latitude','Longitude','EventLocationName'))
+```
+
+```{r}
+subset(df, !(Longitude>=6.0 & Longitude<=18.5 & Latitude>=35.0 & Latitude<=48.0), 
+       select=c('Latitude','Longitude','EventLocationName'))
+```
+
+- These observations are filtered out
+
+```{r, eval = FALSE, echo = TRUE}
+df <- subset(df, Latitude < 0)
+```
+
+```{r filter}
+df <- subset(df, Latitude > 0)
+```
+
+## Generating the Map
+
+- Use [plotly](https://plot.ly/r/) to make a scatter plot of Lat. vs Long
+- Color associated to the depth (Km) of the earthquake
+- Size of each point proportional to the intensity
+
+```{r map, eval = FALSE, echo = TRUE, message=FALSE, warning=FALSE}
+library(plotly)
+with(df, plot_ly(x = Longitude, y = Latitude, 
+                 type="scatter", mode="markers", 
+                 color = ~Depth.Km, size=Magnitude) %>% 
+                 layout(title = "Earthquakes Around Italy", 
+                        xaxis = list(title="Longitude"), 
+                        yaxis = list(title = "Latitude")))
+```
+
+##
+
+```{r plot, message=FALSE, warning=FALSE}
+library(plotly)
+with(df, plot_ly(x = Longitude, y = Latitude, 
+                 type="scatter", mode="markers", 
+                 color = ~Depth.Km, size=Magnitude) %>% 
+                 layout(title = "Earthquakes Around Italy", 
+                        xaxis = list(title="Longitude"), 
+                        yaxis = list(title = "Latitude")))
+```
